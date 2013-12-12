@@ -38,10 +38,10 @@ Require it in your JS manifest's file `application.js`:
 //= require wysihtml5x
 ```
 
-or if you need pure wysihtml functionality without toolbar:
+or if you need wysihtml with built-in toolbar:
 
 ```js
-//= require wysihtml5x-wotools
+//= require wysihtml5x-toolbar
 ```
 
 Additionally include predefined `simple`, `advanced` or `advanced_unwrap` parsing rules in your `application.js`:
