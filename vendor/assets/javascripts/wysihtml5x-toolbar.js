@@ -25,7 +25,7 @@ if(!Array.isArray) {
     return Object.prototype.toString.call(arg) === '[object Array]';
   };
 };/**
- * @license wysihtml5x v0.4.7
+ * @license wysihtml5x v0.4.8
  * https://github.com/Edicy/wysihtml5
  *
  * Author: Christopher Blum (https://github.com/tiff)
@@ -36,7 +36,7 @@ if(!Array.isArray) {
  *
  */
 var wysihtml5 = {
-  version: "0.4.7",
+  version: "0.4.8",
 
   // namespaces
   commands:   {},
@@ -4939,7 +4939,6 @@ wysihtml5.browser = (function() {
     }
 
     if (element.nodeType === wysihtml5.TEXT_NODE && element.data.match(URL_REG_EXP)) {
-      console.log(element);
       _wrapMatchesInNode(element);
       return;
     }
@@ -5249,7 +5248,60 @@ wysihtml5.dom.copyAttributes = function(attributesToCopy) {
   };
 
 })(wysihtml5);
-;/**
+;// TODO: Refactor dom tree traversing here
+(function(wysihtml5) {
+  wysihtml5.dom.domNode = function(node) {
+    var defaultNodeTypes = [wysihtml5.ELEMENT_NODE, wysihtml5.TEXT_NODE];
+
+    var _isBlankText = function(node) {
+      return node.nodeType === wysihtml5.TEXT_NODE && (/^\s*$/g).test(node.data);
+    };
+
+    return {
+
+      // var node = wysihtml5.dom.domNode(element).prev({nodeTypes: [1,3], ignoreBlankTexts: true});
+      prev: function(options) {
+        var prevNode = node.previousSibling,
+            types = (options && options.nodeTypes) ? options.nodeTypes : defaultNodeTypes;
+        
+        if (!prevNode) {
+          return null;
+        }
+
+        if (
+          (!wysihtml5.lang.array(types).contains(prevNode.nodeType)) || // nodeTypes check.
+          (options && options.ignoreBlankTexts && _isBlankText(prevNode)) // Blank text nodes bypassed if set
+        ) {
+          return wysihtml5.dom.domNode(prevNode).prev(options);
+        }
+        
+        return prevNode;
+      },
+
+      // var node = wysihtml5.dom.domNode(element).next({nodeTypes: [1,3], ignoreBlankTexts: true});
+      next: function(options) {
+        var nextNode = node.nextSibling,
+            types = (options && options.nodeTypes) ? options.nodeTypes : defaultNodeTypes;
+        
+        if (!nextNode) {
+          return null;
+        }
+
+        if (
+          (!wysihtml5.lang.array(types).contains(nextNode.nodeType)) || // nodeTypes check.
+          (options && options.ignoreBlankTexts && _isBlankText(nextNode)) // blank text nodes bypassed if set
+        ) {
+          return wysihtml5.dom.domNode(nextNode).next(options);
+        }
+        
+        return nextNode;
+      }
+
+
+
+    };
+  };
+})(wysihtml5);;/**
  * Returns the given html wrapped in a div element
  *
  * Fixing IE's inability to treat unknown elements (HTML5 section, article, ...) correctly
@@ -5380,19 +5432,7 @@ wysihtml5.dom.getParentElement = (function() {
     return null;
   };
 })();
-;wysihtml5.dom.getNextElement = function(node){
-  var nextSibling = node.nextSibling;
-  while(nextSibling && nextSibling.nodeType != 1) {
-    nextSibling = nextSibling.nextSibling;
-  }
-  return nextSibling;
-};;wysihtml5.dom.getPreviousElement = function(node){
-  var nextSibling = node.previousSibling;
-  while(nextSibling && nextSibling.nodeType != 1) {
-    nextSibling = nextSibling.previousSibling;
-  }
-  return nextSibling;
-};;/**
+;/**
  * Get element's style for a specific css property
  *
  * @param {Element} element The element on which to retrieve the style
@@ -5579,7 +5619,68 @@ wysihtml5.dom.hasElementWithTagName = (function() {
     }
   };
 };
-;/**
+;// TODO: Refactor dom tree traversing here
+(function(wysihtml5) {
+  wysihtml5.dom.lineBreaks = function(node) {
+
+    function _isLineBreak(n) {
+      return n.nodeName === "BR";
+    }
+
+    /**
+     * Checks whether the elment causes a visual line break
+     * (<br> or block elements)
+     */
+    function _isLineBreakOrBlockElement(element) {
+      if (_isLineBreak(element)) {
+        return true;
+      }
+
+      if (wysihtml5.dom.getStyle("display").from(element) === "block") {
+        return true;
+      }
+
+      return false;
+    }
+
+    return {
+
+      /* wysihtml5.dom.lineBreaks(element).add();
+       *
+       * Adds line breaks before and after the given node if the previous and next siblings
+       * aren't already causing a visual line break (block element or <br>)
+       */
+      add: function(options) {
+        var doc             = node.ownerDocument,
+          nextSibling     = wysihtml5.dom.domNode(node).next({ignoreBlankTexts: true}),
+          previousSibling = wysihtml5.dom.domNode(node).prev({ignoreBlankTexts: true});
+
+        if (nextSibling && !_isLineBreakOrBlockElement(nextSibling)) {
+          wysihtml5.dom.insert(doc.createElement("br")).after(node);
+        }
+        if (previousSibling && !_isLineBreakOrBlockElement(previousSibling)) {
+          wysihtml5.dom.insert(doc.createElement("br")).before(node);
+        }
+      },
+
+      /* wysihtml5.dom.lineBreaks(element).remove();
+       *
+       * Removes line breaks before and after the given node
+       */
+      remove: function(options) {
+        var nextSibling     = wysihtml5.dom.domNode(node).next({ignoreBlankTexts: true}),
+            previousSibling = wysihtml5.dom.domNode(node).prev({ignoreBlankTexts: true});
+
+        if (nextSibling && _isLineBreak(nextSibling)) {
+          nextSibling.parentNode.removeChild(nextSibling);
+        }
+        if (previousSibling && _isLineBreak(previousSibling)) {
+          previousSibling.parentNode.removeChild(previousSibling);
+        }
+      }
+    };
+  };
+})(wysihtml5);;/**
  * Method to set dom events
  *
  * @example
@@ -6486,7 +6587,7 @@ wysihtml5.dom.replaceWithChildNodes = function(node) {
 
     var doc             = list.ownerDocument,
         fragment        = doc.createDocumentFragment(),
-        previousSibling = list.previousElementSibling || list.previousSibling,
+        previousSibling = wysihtml5.dom.domNode(list).prev({ignoreBlankTexts: true}),
         firstChild,
         lastChild,
         isLastChild,
@@ -7952,7 +8053,14 @@ wysihtml5.dom.query = function(elements, query) {
     };
   }
 })();
-;/**
+;wysihtml5.dom.unwrap = function(node) {
+  if (node.parentNode) {
+    while (node.lastChild) {
+      wysihtml5.dom.insert(node.lastChild).after(node);
+    }
+    node.parentNode.removeChild(node);
+  }
+};;/**
  * Fix most common html formatting misbehaviors of browsers implementation when inserting
  * content via copy & paste contentEditable
  *
@@ -9059,6 +9167,48 @@ wysihtml5.quirks.ensureProperClearing = (function() {
         return this.getSelection().isCollapsed;
     },
 
+    isEndToEndInNode: function(nodeNames) {
+      var range = this.getRange(),
+          parentElement = range.commonAncestorContainer,
+          startNode = range.startContainer,
+          endNode = range.endContainer;
+
+
+        if (parentElement.nodeType === wysihtml5.TEXT_NODE) {
+          parentElement = parentElement.parentNode;
+        }
+
+        if (startNode.nodeType === wysihtml5.TEXT_NODE && !(/^\s*$/).test(startNode.data.substr(range.startOffset))) {
+          return false;
+        }
+
+        if (endNode.nodeType === wysihtml5.TEXT_NODE && !(/^\s*$/).test(endNode.data.substr(range.endOffset))) {
+          return false;
+        }
+
+        while (startNode && startNode !== parentElement) {
+          if (startNode.nodeType !== wysihtml5.TEXT_NODE && !wysihtml5.dom.contains(parentElement, startNode)) {
+            return false;
+          }
+          if (wysihtml5.dom.domNode(startNode).prev({ignoreBlankTexts: true})) {
+            return false;
+          }
+          startNode = startNode.parentNode;
+        }
+
+        while (endNode && endNode !== parentElement) {
+          if (endNode.nodeType !== wysihtml5.TEXT_NODE && !wysihtml5.dom.contains(parentElement, endNode)) {
+            return false;
+          }
+          if (wysihtml5.dom.domNode(endNode).next({ignoreBlankTexts: true})) {
+            return false;
+          }
+          endNode = endNode.parentNode;
+        }
+
+        return (wysihtml5.lang.array(nodeNames).contains(parentElement.nodeName)) ? parentElement : false;
+    },
+
     deselect: function() {
       var sel = this.getSelection();
       sel && sel.removeAllRanges();
@@ -10076,7 +10226,7 @@ wysihtml5.Commands = Base.extend(
       // Following elements are grouped
       // when the caret is within a H1 and the H4 is invoked, the H1 should turn into H4
       // instead of creating a H4 within a H1 which would result in semantically invalid html
-      BLOCK_ELEMENTS_GROUP    = ["H1", "H2", "H3", "H4", "H5", "H6", "P", "PRE", "BLOCKQUOTE", "DIV"];
+      BLOCK_ELEMENTS_GROUP    = ["H1", "H2", "H3", "H4", "H5", "H6", "P", "PRE", "DIV"];
 
   /**
    * Remove similiar classes (based on classRegExp)
@@ -10118,67 +10268,6 @@ wysihtml5.Commands = Base.extend(
     return ret;
   }
 
-  /**
-   * Check whether given node is a text node and whether it's empty
-   */
-  function _isBlankTextNode(node) {
-    return node.nodeType === wysihtml5.TEXT_NODE && !wysihtml5.lang.string(node.data).trim();
-  }
-
-  /**
-   * Returns previous sibling node that is not a blank text node
-   */
-  function _getPreviousSiblingThatIsNotBlank(node) {
-    var previousSibling = node.previousSibling;
-    while (previousSibling && _isBlankTextNode(previousSibling)) {
-      previousSibling = previousSibling.previousSibling;
-    }
-    return previousSibling;
-  }
-
-  /**
-   * Returns next sibling node that is not a blank text node
-   */
-  function _getNextSiblingThatIsNotBlank(node) {
-    var nextSibling = node.nextSibling;
-    while (nextSibling && _isBlankTextNode(nextSibling)) {
-      nextSibling = nextSibling.nextSibling;
-    }
-    return nextSibling;
-  }
-
-  /**
-   * Adds line breaks before and after the given node if the previous and next siblings
-   * aren't already causing a visual line break (block element or <br>)
-   */
-  function _addLineBreakBeforeAndAfter(node) {
-    var doc             = node.ownerDocument,
-        nextSibling     = _getNextSiblingThatIsNotBlank(node),
-        previousSibling = _getPreviousSiblingThatIsNotBlank(node);
-
-    if (nextSibling && !_isLineBreakOrBlockElement(nextSibling)) {
-      node.parentNode.insertBefore(doc.createElement("br"), nextSibling);
-    }
-    if (previousSibling && !_isLineBreakOrBlockElement(previousSibling)) {
-      node.parentNode.insertBefore(doc.createElement("br"), node);
-    }
-  }
-
-  /**
-   * Removes line breaks before and after the given node
-   */
-  function _removeLineBreakBeforeAndAfter(node) {
-    var nextSibling     = _getNextSiblingThatIsNotBlank(node),
-        previousSibling = _getPreviousSiblingThatIsNotBlank(node);
-
-    if (nextSibling && _isLineBreak(nextSibling)) {
-      nextSibling.parentNode.removeChild(nextSibling);
-    }
-    if (previousSibling && _isLineBreak(previousSibling)) {
-      previousSibling.parentNode.removeChild(previousSibling);
-    }
-  }
-
   function _removeLastChildIfLineBreak(node) {
     var lastChild = node.lastChild;
     if (lastChild && _isLineBreak(lastChild)) {
@@ -10188,22 +10277,6 @@ wysihtml5.Commands = Base.extend(
 
   function _isLineBreak(node) {
     return node.nodeName === "BR";
-  }
-
-  /**
-   * Checks whether the elment causes a visual line break
-   * (<br> or block elements)
-   */
-  function _isLineBreakOrBlockElement(element) {
-    if (_isLineBreak(element)) {
-      return true;
-    }
-
-    if (dom.getStyle("display").from(element) === "block") {
-      return true;
-    }
-
-    return false;
   }
 
   /**
@@ -10244,7 +10317,7 @@ wysihtml5.Commands = Base.extend(
 
     var surroundedNodes = composer.selection.surround(options);
     for (var i = 0, imax = surroundedNodes.length; i < imax; i++) {
-      _removeLineBreakBeforeAndAfter(surroundedNodes[i]);
+      wysihtml5.dom.lineBreaks(surroundedNodes[i]).remove();
       _removeLastChildIfLineBreak(surroundedNodes[i]);
     }
 
@@ -10290,7 +10363,7 @@ wysihtml5.Commands = Base.extend(
             if (!hasClasses && !hasStyles && (useLineBreaks || nodeName === "P")) {
               // Insert a line break afterwards and beforewards when there are siblings
               // that are not of type line break or block element
-              _addLineBreakBeforeAndAfter(blockElements[b]);
+              wysihtml5.dom.lineBreaks(blockElements[b]).add();
               dom.replaceWithChildNodes(blockElements[b]);
             } else {
               // Make sure that styling is kept by renaming the element to a <div> or <p> and copying over the class name
@@ -10568,7 +10641,44 @@ wysihtml5.commands.formatCode = {
     }
   };
 })(wysihtml5);
-;wysihtml5.commands.insertHTML = {
+;(function(wysihtml5) {
+
+  wysihtml5.commands.insertBlockQuote = {
+    exec: function(composer, command) {
+      var state = this.state(composer, command),
+          endToEndParent = composer.selection.isEndToEndInNode(['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P']),
+          prevNode, nextNode;
+
+      composer.selection.executeAndRestore(function() {
+        if (state) {
+          if (composer.config.useLineBreaks) {
+             wysihtml5.dom.lineBreaks(state).add();
+          }
+          wysihtml5.dom.unwrap(state);
+        } else {
+          if (composer.selection.isCollapsed()) {
+            composer.selection.selectLine();
+          }
+          
+          if (endToEndParent) {
+            var qouteEl = endToEndParent.ownerDocument.createElement('blockquote');
+            wysihtml5.dom.insert(qouteEl).after(endToEndParent);
+            qouteEl.appendChild(endToEndParent);
+          } else {
+            composer.selection.surround({nodeName: "blockquote"});
+          }
+        }
+      });
+    },
+    state: function(composer, command) {
+      var selectedNode  = composer.selection.getSelectedNode(),
+          node = wysihtml5.dom.getParentElement(selectedNode, { nodeName: "BLOCKQUOTE" }, false, composer.element);
+
+      return (node) ? node : false;
+    }
+  };
+
+})(wysihtml5);;wysihtml5.commands.insertHTML = {
   exec: function(composer, command, html) {
     if (composer.commands.support(command)) {
       composer.doc.execCommand(command, false, html);
@@ -10701,143 +10811,181 @@ wysihtml5.commands.formatCode = {
 })(wysihtml5);
 ;wysihtml5.commands.insertOrderedList = {
   exec: function(composer, command) {
-    var doc           = composer.doc,
-        selectedNode  = composer.selection.getSelectedNode(),
-        list          = wysihtml5.dom.getParentElement(selectedNode, { nodeName: "OL" }),
-        otherList     = wysihtml5.dom.getParentElement(selectedNode, { nodeName: "UL" }),
-        tempClassName =  "_wysihtml5-temp-" + new Date().getTime(),
-        isEmpty,
-        tempElement;
-
-    // do not count list elements outside of composer
-    if (list && !composer.element.contains(list)) {
-      list = null;
-    }
-    if (otherList && !composer.element.contains(otherList)) {
-      otherList = null;
-    }
-
-    if (!list && !otherList && composer.commands.support(command)) {
-      doc.execCommand(command, false, null);
-      return;
-    }
-
-    if (list) {
-      // Unwrap list
-      // <ol><li>foo</li><li>bar</li></ol>
-      // becomes:
-      // foo<br>bar<br>
-      composer.selection.executeAndRestore(function() {
-        wysihtml5.dom.resolveList(list, composer.config.useLineBreaks);
-      });
-    } else if (otherList) {
-      // Turn an unordered list into an ordered list
-      // <ul><li>foo</li><li>bar</li></ul>
-      // becomes:
-      // <ol><li>foo</li><li>bar</li></ol>
-      composer.selection.executeAndRestore(function() {
-        wysihtml5.dom.renameElement(otherList, "ol");
-      });
-    } else {
-      // Create list
-      composer.selection.executeAndRestoreRangy(function() {
-        tempElement = composer.selection.deblockAndSurround({
-          "nodeName": "div",
-          "className": tempClassName
-        });
-        
-        // This space causes new lists to never break on enter 
-        var INVISIBLE_SPACE_REG_EXP = /\uFEFF/g;
-        tempElement.innerHTML = tempElement.innerHTML.replace(INVISIBLE_SPACE_REG_EXP, "");
-
-        if (tempElement) {
-          isEmpty = tempElement.innerHTML === "" || tempElement.innerHTML === wysihtml5.INVISIBLE_SPACE || tempElement.innerHTML === "<br>";
-          list = wysihtml5.dom.convertToList(tempElement, "ol", composer.parent.config.uneditableContainerClassname);
-          if (isEmpty) {
-            composer.selection.selectNode(list.querySelector("li"), true);
-          }
-        }
-      });
-    }
+    wysihtml5.commands.insertList.exec(composer, command, "OL");
   },
 
-  state: function(composer) {
-    var selectedNode = composer.selection.getSelectedNode(),
-        node = wysihtml5.dom.getParentElement(selectedNode, { nodeName: "OL" });
-
-    return (composer.element.contains(node) ? node : false);
+  state: function(composer, command) {
+    return wysihtml5.commands.insertList.state(composer, command, "OL");
   }
 };
 ;wysihtml5.commands.insertUnorderedList = {
   exec: function(composer, command) {
-    var doc           = composer.doc,
-        selectedNode  = composer.selection.getSelectedNode(),
-        list          = wysihtml5.dom.getParentElement(selectedNode, { nodeName: "UL" }),
-        otherList     = wysihtml5.dom.getParentElement(selectedNode, { nodeName: "OL" }),
-        tempClassName =  "_wysihtml5-temp-" + new Date().getTime(),
-        isEmpty,
-        tempElement;
-
-    // do not count list elements outside of composer
-    if (list && !composer.element.contains(list)) {
-      list = null;
-    }
-    if (otherList && !composer.element.contains(otherList)) {
-      otherList = null;
-    }
-
-    if (!list && !otherList && composer.commands.support(command)) {
-      doc.execCommand(command, false, null);
-      return;
-    }
-
-    if (list) {
-      // Unwrap list
-      // <ul><li>foo</li><li>bar</li></ul>
-      // becomes:
-      // foo<br>bar<br>
-      composer.selection.executeAndRestore(function() {
-        wysihtml5.dom.resolveList(list, composer.config.useLineBreaks);
-      });
-    } else if (otherList) {
-      // Turn an ordered list into an unordered list
-      // <ol><li>foo</li><li>bar</li></ol>
-      // becomes:
-      // <ul><li>foo</li><li>bar</li></ul>
-      composer.selection.executeAndRestore(function() {
-        wysihtml5.dom.renameElement(otherList, "ul");
-      });
-    } else {
-      // Create list
-      composer.selection.executeAndRestoreRangy(function() {
-        tempElement = composer.selection.deblockAndSurround({
-          "nodeName": "div",
-          "className": tempClassName
-        });
-
-        // This space causes new lists to never break on enter 
-        var INVISIBLE_SPACE_REG_EXP = /\uFEFF/g;
-        tempElement.innerHTML = tempElement.innerHTML.replace(INVISIBLE_SPACE_REG_EXP, "");
-        
-        if (tempElement) {
-          isEmpty = tempElement.innerHTML === "" || tempElement.innerHTML === wysihtml5.INVISIBLE_SPACE || tempElement.innerHTML === "<br>";
-          list = wysihtml5.dom.convertToList(tempElement, "ul", composer.parent.config.uneditableContainerClassname);
-          if (isEmpty) {
-            composer.selection.selectNode(list.querySelector("li"), true);
-          }
-        }
-      });
-    }
+    wysihtml5.commands.insertList.exec(composer, command, "UL");
   },
 
-  state: function(composer) {
-    var selectedNode = composer.selection.getSelectedNode(),
-        node = wysihtml5.dom.getParentElement(selectedNode, { nodeName: "UL" });
-
-    return (composer.element.contains(node) ? node : false);
+  state: function(composer, command) {
+    return wysihtml5.commands.insertList.state(composer, command, "UL");
   }
 };
-;wysihtml5.commands.italic = {
+;wysihtml5.commands.insertList = (function() {
+
+  var isNode = function(node, name) {
+    if (node && node.nodeName) {
+      if (typeof name === 'string') {
+        name = [name];
+      }
+      for (var n = name.length; n--;) {
+        if (node.nodeName === name[n]) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  var findListEl = function(node, nodeName, composer) {
+    var ret = {
+          el: null,
+          other: false
+        };
+
+    if (node) {
+      var parentLi = wysihtml5.dom.getParentElement(node, { nodeName: "LI" });
+          otherNodeName = (nodeName === "UL") ? "OL" : "UL";
+
+      if (isNode(node, nodeName)) {
+        ret.el = node;
+      } else if (isNode(node, otherNodeName)) {
+        ret = {
+          el: node,
+          other: true
+        };
+      } else if (parentLi) {
+        if (isNode(parentLi.parentNode, nodeName)) {
+          ret.el = parentLi.parentNode;
+        } else if (isNode(parentLi.parentNode, otherNodeName)) {
+          ret = {
+            el : parentLi.parentNode,
+            other: true
+          };
+        }
+      }
+    }
+
+    // do not count list elements outside of composer
+    if (ret.el && !composer.element.contains(ret.el)) {
+      ret.el = null;
+    }
+
+    return ret;
+  };
+
+  var handleSameTypeList = function(el, nodeName, composer) {
+    var otherNodeName = (nodeName === "UL") ? "OL" : "UL",
+        otherLists, innerLists;
+    // Unwrap list
+    // <ul><li>foo</li><li>bar</li></ul>
+    // becomes:
+    // foo<br>bar<br>
+    composer.selection.executeAndRestore(function() {
+      var otherLists = getListsInSelection(otherNodeName, composer);
+      if (otherLists.length) {
+        for (var l = otherLists.length; l--;) {
+          wysihtml5.dom.renameElement(otherLists[l], nodeName.toLowerCase());
+        }
+      } else {
+        innerLists = getListsInSelection(['OL', 'UL'], composer);
+        for (var i = innerLists.length; i--;) {
+          wysihtml5.dom.resolveList(innerLists[i], composer.config.useLineBreaks);
+        }
+        wysihtml5.dom.resolveList(el, composer.config.useLineBreaks);
+      }
+    });
+  };
+
+  var handleOtherTypeList =  function(el, nodeName, composer) {
+    var otherNodeName = (nodeName === "UL") ? "OL" : "UL";
+    // Turn an ordered list into an unordered list
+    // <ol><li>foo</li><li>bar</li></ol>
+    // becomes:
+    // <ul><li>foo</li><li>bar</li></ul>
+    // Also rename other lists in selection
+    composer.selection.executeAndRestore(function() {
+      var renameLists = [el].concat(getListsInSelection(otherNodeName, composer));
+
+      // All selection inner lists get renamed too
+      for (var l = renameLists.length; l--;) {
+        wysihtml5.dom.renameElement(renameLists[l], nodeName.toLowerCase());
+      }
+    });
+  };
+
+  var getListsInSelection = function(nodeName, composer) {
+      var ranges = composer.selection.getOwnRanges(),
+          renameLists = [];
+
+      for (var r = ranges.length; r--;) {
+        renameLists = renameLists.concat(ranges[r].getNodes([1], function(node) {
+          return isNode(node, nodeName);
+        }));
+      }
+
+      return renameLists;
+  };
+
+  var createListFallback = function(nodeName, composer) {
+    // Fallback for Create list
+    composer.selection.executeAndRestoreRangy(function() {
+      var tempClassName =  "_wysihtml5-temp-" + new Date().getTime(),
+          tempElement = composer.selection.deblockAndSurround({
+            "nodeName": "div",
+            "className": tempClassName
+          }),
+          isEmpty, list;
+
+      // This space causes new lists to never break on enter 
+      var INVISIBLE_SPACE_REG_EXP = /\uFEFF/g;
+      tempElement.innerHTML = tempElement.innerHTML.replace(INVISIBLE_SPACE_REG_EXP, "");
+      
+      if (tempElement) {
+        isEmpty = wysihtml5.lang.array(["", "<br>", wysihtml5.INVISIBLE_SPACE]).contains(tempElement.innerHTML);
+        list = wysihtml5.dom.convertToList(tempElement, nodeName.toLowerCase(), composer.parent.config.uneditableContainerClassname);
+        if (isEmpty) {
+          composer.selection.selectNode(list.querySelector("li"), true);
+        }
+      }
+    });
+  };
+
+  return {
+    exec: function(composer, command, nodeName) {
+      var doc           = composer.doc,
+          cmd           = (nodeName === "OL") ? "insertorderedlist" : "insertunorderedlist",
+          selectedNode  = composer.selection.getSelectedNode(),
+          list          = findListEl(selectedNode, nodeName, composer);
+
+      if (!list.el) {
+        if (composer.commands.support(cmd)) {
+          doc.execCommand(cmd, false, null);
+        } else {
+          createListFallback(nodeName, composer);
+        }
+      } else if (list.other) {
+        handleOtherTypeList(list.el, nodeName, composer);
+      } else {
+        handleSameTypeList(list.el, nodeName, composer);
+      }
+    },
+
+    state: function(composer, command, nodeName) {
+      var selectedNode = composer.selection.getSelectedNode(),
+          list         = findListEl(selectedNode, nodeName, composer);
+
+      return (list.el && !list.other) ? list.el : false;
+    }
+  };
+
+})();;wysihtml5.commands.italic = {
   exec: function(composer, command) {
     wysihtml5.commands.formatInline.execWithToggle(composer, command, "i");
   },
@@ -11119,7 +11267,7 @@ wysihtml5.commands.formatCode = {
         liNode = liNodes[i];
         listTag = (liNode.parentNode.nodeName === 'OL') ? 'OL' : 'UL';
         list = liNode.ownerDocument.createElement(listTag);
-        prevLi = wysihtml5.dom.getPreviousElement(liNode);
+        prevLi = wysihtml5.dom.domNode(liNode).prev({nodeTypes: [wysihtml5.ELEMENT_NODE]});
         prevLiList = (prevLi) ? prevLi.querySelector('ul, ol') : null;
 
         if (prevLi) {
