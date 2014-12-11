@@ -376,7 +376,7 @@ if ("document" in self) {
 }
 
 ;/**
- * @license wysihtml5x v0.5.0-beta1
+ * @license wysihtml5x v0.5.0-beta2
  * https://github.com/Edicy/wysihtml5
  *
  * Author: Christopher Blum (https://github.com/tiff)
@@ -387,7 +387,7 @@ if ("document" in self) {
  *
  */
 var wysihtml5 = {
-  version: "0.5.0-beta1",
+  version: "0.5.0-beta2",
 
   // namespaces
   commands:   {},
@@ -13819,7 +13819,7 @@ wysihtml5.views.View = Base.extend(
           parent.parentNode.removeChild(parent);
         }
         setTimeout(function() {
-          wysihtml5.quirks.redraw(element);
+          wysihtml5.quirks.redraw(this.element);
         }, 0);
       }
     }
@@ -13827,7 +13827,7 @@ wysihtml5.views.View = Base.extend(
     if (this.config.handleTabKey && keyCode === wysihtml5.TAB_KEY) {
       // TAB key handling
       event.preventDefault();
-      handleTabKeyDown(this, element);
+      handleTabKeyDown(this, this.element);
     }
 
   };

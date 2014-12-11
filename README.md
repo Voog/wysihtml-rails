@@ -1,21 +1,21 @@
-# wysihtml5x for Rails
+# wysihtml for Rails
 
-[Edicy/wysihtml5x](http://edicy.github.io/wysihtml5/) is an extended and less strict approach on [xing/wysihtml5](http://xing.github.io/wysihtml5/) open source rich text editor based on HTML5 technology.
+[Voog/wysihtml](https://github.com/Voog/wysihtml) is an extended and less strict approach on [xing/wysihtml5](http://xing.github.io/wysihtml5/) open source rich text editor based on HTML5 technology.
 
-This gem adds wysihtml5x to Rails assets pipeline.
+This gem adds wysihtml to Rails assets pipeline.
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'wysihtml5x-rails'
+gem 'wysihtml-rails'
 ```
 
 Or you can install from latest build:
 
 ```ruby
-gem 'wysihtml5x-rails', :git => 'https://github.com/Edicy/wysihtml5x-rails.git'
+gem 'wysihtml-rails', :git => 'https://github.com/Voog/wysihtml-rails.git'
 ```
 
 And then execute:
@@ -27,7 +27,7 @@ bundle
 Or install it yourself as:
 
 ```sh
-$ gem install wysihtml5x-rails
+$ gem install wysihtml-rails
 ```
 
 ## Usage
@@ -35,13 +35,13 @@ $ gem install wysihtml5x-rails
 Require it in your JS manifest's file `application.js`:
 
 ```js
-//= require wysihtml5x
+//= require wysihtml
 ```
 
 or if you need wysihtml with built-in toolbar:
 
 ```js
-//= require wysihtml5x-toolbar
+//= require wysihtml-toolbar
 ```
 
 Additionally include predefined `simple`, `advanced` or `advanced_unwrap` parsing rules in your `application.js`:
@@ -50,10 +50,10 @@ Additionally include predefined `simple`, `advanced` or `advanced_unwrap` parsin
 //= require parser_rules/advanced_unwrap
 ```
 
-Additionally include predefined `wysihtml5x` stiles in your `application.css.scss` file:
+Additionally include predefined `wysihtml` stiles in your `application.css.scss` file:
 
 ```scss
-*= require wysihtml5x
+*= require wysihtml
 ```
 
 The simple initialise:
@@ -62,7 +62,7 @@ The simple initialise:
 <script>
    var editor = new wysihtml5.Editor("wysihtml5-textarea", { // id of textarea element
       toolbar:      "wysihtml5-toolbar", // id of toolbar element
-      stylesheets:  "<%= stylesheet_path('wysihtml5x') %>", // optional, css to style the editor's content
+      stylesheets:  "<%= stylesheet_path('wysihtml') %>", // optional, css to style the editor's content
       parserRules:  wysihtml5ParserRules, // defined in parser rules set
       //showToolbarAfterInit: false
    });
