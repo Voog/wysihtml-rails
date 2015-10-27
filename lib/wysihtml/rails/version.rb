@@ -1,5 +1,5 @@
 module Wysihtml
   module Rails
-    VERSION = "0.5.0.beta14"
+    VERSION = "0.5.0"
   end
 end
