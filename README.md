@@ -38,16 +38,19 @@ Require it in your JS manifest's file `application.js`:
 //= require wysihtml
 ```
 
-or if you need wysihtml with built-in toolbar:
+or if you also need toolbar, table editing features or all commands:
 
 ```js
-//= require wysihtml-toolbar
+//= require wysihtml
+//= require wysihtml/toolbar
+//= require wysihtml/all_commands
+//= require wysihtml/table_editing
 ```
 
 Additionally include predefined `simple`, `advanced` or `advanced_unwrap` parsing rules in your `application.js`:
 
 ```js
-//= require parser_rules/advanced_unwrap
+//= require wysihtml/parser_rules/advanced_unwrap
 ```
 
 Additionally include predefined `wysihtml` stiles in your `application.css.scss` file:
@@ -60,10 +63,10 @@ The simple initialise:
 
 ```html
 <script>
-   var editor = new wysihtml5.Editor("wysihtml5-textarea", { // id of textarea element
-      toolbar:      "wysihtml5-toolbar", // id of toolbar element
+   var editor = new wysihtml.Editor("wysihtml-textarea", { // id of textarea element
+      toolbar:      "wysihtml-toolbar", // id of toolbar element
       stylesheets:  "<%= stylesheet_path('wysihtml') %>", // optional, css to style the editor's content
-      parserRules:  wysihtml5ParserRules, // defined in parser rules set
+      parserRules:  wysihtmlParserRules, // defined in parser rules set
       //showToolbarAfterInit: false
    });
 </script>
