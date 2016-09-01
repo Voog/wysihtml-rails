@@ -11,6 +11,7 @@
 //= require ./extra_commands/foreColor.js
 //= require ./extra_commands/foreColorStyle.js
 //= require ./extra_commands/insertBlockQuote.js
+//= require ./extra_commands/insertHorizontalRule.js
 //= require ./extra_commands/insertOrderedList.js
 //= require ./extra_commands/insertUnorderedList.js
 //= require ./extra_commands/italic.js
